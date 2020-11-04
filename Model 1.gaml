@@ -1,6 +1,5 @@
 /**
 * Name: Model1
-* Based on the internal empty template. 
 * Author: Noemie and Harshdeep
 * Tags: 
 */
@@ -15,19 +14,19 @@ global {
 		
 	int GuestNo <- 15;
 	int InfoCentreNo <- 1;
-	int StoreNo <- 1;
-	int hungerRate <-6;
+	int FoodStoreNo <- 1;
+	int WaterStoreNo <- 1; 
+
 	point InfoCentreLoc <- {50,50};
+	
 	init {
 		
-		create Guest number: GuestNo{
-			location <- {rnd(100), rnd(100)};
-			}
-			
-		create Store number: StoreNo
+		create Guest number: GuestNo 
 		{
-			//location <- {50,50};
-		}
+			location <- {rnd(100),rnd(100)};
+		}	
+		create FoodStore number: FoodStoreNo;
+		create WaterStore number: WaterStoreNo; 
 		create InfoCentre number: InfoCentreNo
 		{
 			location <- InfoCentreLoc;
@@ -35,40 +34,57 @@ global {
 	}
 }
 
-species Guest skills: [moving]{
+species Guest skills:[moving]{
 	
-	float size<- 0.75;
-	rgb color<- #red;
-	int max_thirst<- 100; 
-	int thirst_rate<-6;
+	float size <- 0.75;
+	rgb color <- #red;
+	int max_hunger <- 100;
+	int hunger_rate <- 5; 
 	
-	int thirst<- rnd(max_thirst) update: thirst - thirst_rate max: max_thirst; 
-	float hunger<- rnd(50)+50.0;
-	InfoCentre target<- nil; 
+	int hunger <- rnd(max_hunger) update: hunger - rnd(hunger_rate) max: max_hunger;	
+	int thirst <- rnd(max_hunger) update: thirst - rnd(hunger_rate) max: max_hunger; 
+	
+	InfoCentre target <- nil; 
 	
 	aspect default
 	{
-		draw sphere(size) at: location color:color; 
+		draw circle(size) at: location color:color; 
 	}
-	reflex thirsty
+	
+	reflex thirsty  
 	{
-		//thirst<- thirst-rnd(hungerRate);
 		if (thirst<10){
-			color<-#black;
-			target<- one_of(InfoCentre);
+			color <- #black;
+			target <- one_of(InfoCentre);
+		}
+		if (hunger<10){
+			color <- #black;
+			target <- one_of(InfoCentre); 
 		}
 	}
+	
 	reflex beCrazy when: target=nil
 	{ 
 		do wander;
 	}
-	reflex move2Target when: target!=nil
+	
+	reflex moveToTarget when: target!=nil
 	{
 		do goto target:target.location;
 	}
 }
 
-species Store {
+species FoodStore {
+	float size<-2.75;
+	rgb color<- #green;
+	
+	aspect default
+	{
+		draw square(size) color:color;
+	}
+}
+
+species WaterStore {
 	float size<-2.75;
 	rgb color<- #blue;
 	
@@ -80,7 +96,7 @@ species Store {
 
 species InfoCentre {
 	float size<-2.75;
-	rgb color<- #green;
+	rgb color<- #gold;
 	
 	aspect default
 	{
@@ -94,7 +110,8 @@ experiment main type: gui{
 		display map
 		{
 			species Guest;
-			species Store;
+			species FoodStore;
+			species WaterStore;
 			species InfoCentre;
 		}
 	}
