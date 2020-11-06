@@ -64,7 +64,17 @@ species Guest skills:[moving]{
 	reflex thirstyOrHungry  when: target=nil and (thirst < limit or hunger < limit)
 	{
 		string msg <- name; 
-		if (thirst < limit){ /* Go first drink (even if hunger < limit) */
+		if (thirst < limit and hunger < limit){
+			if (thirst <= hunger){ /* Go first drink even if thirst = hunger */
+				msg <- msg + ' is thirsty';
+				food <- false; 
+			}
+			else {
+				msg <- msg + ' is hungry';
+				food <- true;
+			}
+		}
+		else if (thirst < limit) { 
 			msg <- msg + ' is thirsty';
 			food <- false; 
 		}
