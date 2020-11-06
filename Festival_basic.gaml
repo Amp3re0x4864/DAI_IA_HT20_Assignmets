@@ -48,6 +48,7 @@ species Guest skills:[moving]{
 	int hunger <- rnd(200) update: hunger - rnd(hunger_rate);	
 	int thirst <- rnd(100) update: thirst - rnd(hunger_rate); 
 	
+	bool food <- nil; /* food = true when looking for food, false when looking for a drink, nil when wandering */
 	Building target <- nil; 
 	
 	aspect default
@@ -55,28 +56,26 @@ species Guest skills:[moving]{
 		draw circle(size) at: location color:color; 
 	}
 	
+	reflex beCrazy when: target=nil
+	{ 
+		do wander;
+	}
+	
 	reflex thirstyOrHungry  when: target=nil and (thirst < limit or hunger < limit)
 	{
 		string msg <- name; 
-		if (thirst < limit and hunger < limit)
-		{
-			msg <- msg + " is hungry and thirsty";
-		}
-		else if (thirst < limit){
+		if (thirst < limit){ /* Go first drink (even if hunger < limit) */
 			msg <- msg + ' is thirsty';
+			food <- false; 
 		}
 		else if (hunger < limit){
 			msg <- msg + ' is hungry';
+			food <- true; 
 		}
 		
 		color <- #black;
 		target <- one_of(InfoCentre);
 		write msg; 
-	}
-	
-	reflex beCrazy when: target=nil
-	{ 
-		do wander;
 	}
 	
 	reflex moveToTarget when: target!=nil
@@ -86,22 +85,19 @@ species Guest skills:[moving]{
 	
 	reflex askInfoCentre when: target!=nil and target.location = InfoCentreLoc and location distance_to(target.location) < InfoCentreSize 
 	{
+		string msg <- name + ' is going to '; 
 		ask InfoCentre {
-			// First go drink if thirst <= hunger
-			string msg <- myself.name + ' is heading to '; 
-			if(myself.thirst <= myself.hunger)
+			if !myself.food
 			{
 				myself.target <- DrinkStores[rnd(length(DrinkStores)-1)];
 				myself.color <- #blue;
-				msg <- msg + myself.target.name;
-				msg <- msg + ' to get a drink';
+				msg <- msg + myself.target.name + ' to get a drink';
 			}
 			else
 			{
 				myself.target <- FoodStores[rnd(length(FoodStores)-1)];
 				myself.color <- #green;
-				msg <- msg + myself.target.name;
-				msg <- msg + ' to eat something';
+				msg <- msg + myself.target.name + ' to eat something';
 			}
 			write msg; 
 		}
@@ -111,11 +107,11 @@ species Guest skills:[moving]{
 	{
 		string msg <- name; 
 		ask target {
-			if self.type = "Food Store" {
+			if myself.food {
 				myself.hunger <- max_hunger; 
 				msg <- msg + " ate food at " + self.name; 
 			}
-			else if self.type = "Drink Store" {
+			else {
 				myself.thirst <- max_thirst; 
 				msg <- msg + " drank something at " + self.name;
 			}
@@ -123,17 +119,16 @@ species Guest skills:[moving]{
 		write msg; 
 		color <- #red;
 		target <- nil; 
+		food <- nil; 
 	}
 }
 
 species Building {
 	float size <- BuildingSize;
-	string type <- "Building";
 }
 
 species FoodStore parent: Building {
 	rgb color <- #green;
-	string type <- "Food Store";
 	
 	aspect default
 	{
@@ -143,7 +138,6 @@ species FoodStore parent: Building {
 
 species DrinkStore parent: Building {
 	rgb color <- #blue;
-	string type <- "Drink Store";
 	
 	aspect default
 	{
