@@ -15,12 +15,12 @@ global {
 	// Participant options 
 	float speed <- 10.0;
 	int part_minPrice <- 10; 
-	int part_maxPrice <- 1000;
+	int part_maxPrice <- 1500;
 	
 	// Auctioneer options 
-	int auct_minPrice <- 100; 
+	int auct_minPrice <- 1000; 
 	int auct_maxPrice <- 2000;
-	int lowerPrice_min <- 5; 
+	int lowerPrice_min <- 5;
 	int lowerPrice_max <- 100;
 	int reservePrice_min <- 100; 
 	int reservePrice_max <- 1000; 
@@ -73,8 +73,7 @@ species Participant skills: [moving, fipa] {
 	}
 	
 	reflex receive_reject_proposals when: !empty(reject_proposals) {
-    	message r <- reject_proposals[0];
-        write '(Time ' + time + '): ' + name + ' loses the auction ';
+    	// do nothing 
     }
 	
 	// get informed 
@@ -97,16 +96,16 @@ species Participant skills: [moving, fipa] {
 	reflex receive_cfp_msg when: !empty(cfps) {
         message proposal <- cfps[0];
         write '(Time ' + time + '): ' + name + ' receives a cfp message from ' + agent(proposal.sender).name + ' with content ' + proposal.contents;
-		write '\t Willing to pay ' + money;  
 		list content <- proposal.contents;
 		int offer <- int(content[1]); 
 		
 		if money >= offer {
 			write ' \t Send a proposal of ' + offer + ' to ' + agent(proposal.sender).name;
-			do propose with: (message: proposal, contents: ['I want to buy for',offer]);
+			do propose with: (message: proposal, contents: ['I want to buy for ',offer]);
 		}
 		else { 
-			do refuse with: (message: proposal, contents: ['I do not want to buy for',offer]);
+			write ' \t Willing to pay ' + money + ' to ' + agent(proposal.sender).name;
+			do propose with: (message: proposal, contents: ["I'm willing to pay ",money]);
 		}
     }
 
@@ -143,6 +142,7 @@ species Auctioneer skills: [fipa] {
 	bool auctionAnnounced <- false; 
 	bool auctionStarted <- false;	
 	bool auctionDone <- false; 
+	bool winner <- false;
 	
 	// Announce auction to all participants using inform protocol 
 	reflex announce_auction when: !auctionAnnounced and time >= rnd(10.0,100.0) { 
@@ -160,21 +160,24 @@ species Auctioneer skills: [fipa] {
 	
 	// Receive proposals 
 	reflex receive_proposal when: !empty(proposes) {
-		bool winner <- false; 
 		loop p over: proposes {
 			write '(Time ' + time + '): ' + name + ' receives a propose message from ' + agent(p.sender).name + ' with content ' + p.contents ;
-            if winner = false {
-            	write '\t' + name + ' accepts the proposal of ' + agent(p.sender).name;
+			list content <- list(p.contents);
+            if winner = false and content[1] = price {
+            	write '\t Accepts the proposal of ' + agent(p.sender).name;
             	do accept_proposal with: [message :: p, contents :: ['Win the auction at price ',price]];
             	auctionDone <- true;
             	winner <- true; 
             }
             else { 
-            	do reject_proposal with: [message :: p, contents :: ['Lose the auction',price]];
+            	write '\t Rejects the proposal of ' + agent(p.sender).name;
+            	do reject_proposal with: [message :: p, contents :: ['Reject the auction at price ',content[1]]];
             } 
 		}
-		do start_conversation with: [to :: possibleBuyers, protocol :: 'fipa-contract-net', performative :: 'inform', contents :: ['Auction ended','Selling done']];
-		do die;
+		if winner = true {
+			do start_conversation with: [to :: possibleBuyers, protocol :: 'fipa-contract-net', performative :: 'inform', contents :: ['Auction ended','Selling done']];
+			do die;
+		}
 	}
 	
 	bool firstRound <- true;
@@ -198,9 +201,7 @@ species Auctioneer skills: [fipa] {
 			write '\t Sell at price ' + price; 
 			do start_conversation with: [ to :: list(possibleBuyers), protocol :: 'fipa-contract-net', performative :: 'cfp', contents :: ['Sell at price ',price]];
 		}
-	}
-	
-	// 
+	} 
 }
 
 experiment main {
