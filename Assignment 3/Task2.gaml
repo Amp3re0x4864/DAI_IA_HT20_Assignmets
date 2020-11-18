@@ -2,7 +2,7 @@
 * Name: Task2 
 * Author: Noémie and Harshdeep
 * Description: Concerts in a festival
-* 			   use of the utility function to make guests go to there favorite act 
+* 			   use of the utility function to make guests go to there favorite concert 
 */
 
 
@@ -141,7 +141,7 @@ species Stage skills: [fipa] {
 		// Start a new concert after 30s 
 		startConcert <- startConcert + duration + 30;  
 		
-		// Change the attributes value 
+		// Change the attributes value
 		ligth <- rnd(1.0);
 		visuals <- rnd(1.0); 
 		speakers <- rnd(1.0);
